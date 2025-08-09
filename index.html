@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Webscape - RuneScape 2004 Chat Re-creation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Fonts (approximate RS 2004 feel) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:wght@400&family=Old+Standard+TT:wght@400;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="./styles.css" />
+
+    <!-- Import map (kept for future extensibility) -->
+    <script type="importmap">
+      {
+        "imports": {
+          "serverSim": "./serverSim.js",
+          "utils": "./utils.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="app">
+      <header class="rs-header">
+        <div class="logo">Webscape</div>
+        <div class="world-status">
+          World: <span id="worldName">World1</span> • Username: <span id="displayUsername">-</span>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="viewport">
+          <!-- Simulated game viewport. Clicking here should close open UIs. -->
+          <iframe id="gameFrame" title="Game Viewport" srcdoc="<!doctype html><html><head><style>
+            html,body{height:100%;margin:0;background:#0e2212;}
+            .scene{height:100%;display:flex;align-items:center;justify-content:center;color:#b4c08a;font-family:sans-serif;}
+            .scene:active{outline:none;}
+          </style></head><body>
+            <div class='scene'>Game Viewport (click to close chat popups)</div>
+            <script>document.addEventListener('mousedown',()=>top.postMessage({type:'iframe-click'},'*'));</script>
+          </body></html>" sandbox="allow-scripts"></iframe>
+        </section>
+
+        <aside class="sidepanels">
+          <div class="panel-tabs">
+            <button class="tab active" data-tab="friends">Friends</button>
+            <button class="tab" data-tab="ignores">Ignores</button>
+          </div>
+          <div class="panel-content">
+            <div id="friendsPanel" class="panel active">
+              <div class="panel-header">Friends List</div>
+              <div id="friendsList" class="list"></div>
+              <div class="panel-actions">
+                <button id="addFriendBtn" class="btn">Add friend</button>
+              </div>
+            </div>
+            <div id="ignoresPanel" class="panel">
+              <div class="panel-header">Ignore List</div>
+              <div id="ignoreList" class="list"></div>
+              <div class="panel-actions">
+                <button id="addIgnoreBtn" class="btn">Add ignore</button>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </main>
+
+      <footer class="chatbar">
+        <div class="chat-top-row">
+          <div class="split-toggle">
+            <label>
+              <input id="splitToggle" type="checkbox" />
+              Split private chat
+            </label>
+          </div>
+          <div class="channel-status">
+            Public: On • Private: On • Trade: Off
+          </div>
+        </div>
+
+        <div id="chatWindow" class="chat-window">
+          <!-- Combined view -->
+          <div id="chatCombined" class="chat-scroller"></div>
+
+          <!-- Split view -->
+          <div id="chatSplit" class="chat-split">
+            <div class="chat-column">
+              <div class="col-header">Public & System</div>
+              <div id="chatPublic" class="chat-scroller"></div>
+            </div>
+            <div class="chat-column">
+              <div class="col-header">Private</div>
+              <div id="chatPrivate" class="chat-scroller"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="enterMessage" class="enter-message">
+          <div class="prompt">Enter message:</div>
+          <input id="messageInput" type="text" placeholder="Type here..." autocomplete="off" />
+          <button id="sendBtn" class="btn primary">Send</button>
+        </div>
+      </footer>
+    </div>
+
+    <!-- Context menu for usernames -->
+    <div id="contextMenu" class="context-menu hidden" role="menu" aria-hidden="true">
+      <ul id="contextMenuList"></ul>
+    </div>
+
+    <!-- Modal (add/remove friend/ignore, message user) -->
+    <div id="modalBackdrop" class="modal-backdrop hidden" aria-hidden="true">
+      <div class="modal">
+        <div class="modal-header">
+          <div class="modal-title" id="modalTitle">Title</div>
+          <button id="modalClose" class="modal-close" aria-label="Close">×</button>
+        </div>
+        <div class="modal-body" id="modalBody"></div>
+        <div class="modal-footer" id="modalFooter">
+          <button id="modalCancel" class="btn">Cancel</button>
+          <button id="modalConfirm" class="btn primary">Confirm</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Login (username) -->
+    <div id="loginBackdrop" class="modal-backdrop" aria-hidden="false">
+      <div class="modal">
+        <div class="modal-header">
+          <div class="modal-title">Welcome to Webscape</div>
+        </div>
+        <div class="modal-body">
+          <label class="label">Choose a username:</label>
+          <input id="loginUsername" class="input" placeholder="e.g., Player123" maxlength="20" />
+          <label class="label">Choose a world:</label>
+          <select id="loginWorld" class="input">
+            <option>World1</option>
+            <option>World2</option>
+            <option>World3</option>
+          </select>
+          <div class="hint">Tip: Open another tab with a different username to see real-time chat via BroadcastChannel.</div>
+        </div>
+        <div class="modal-footer">
+          <button id="loginConfirm" class="btn primary">Enter</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="./app.js"></script>
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4c6229722a6346bc8eb5cb0e5eae5d41","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
+
